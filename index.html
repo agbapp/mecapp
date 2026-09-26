@@ -755,19 +755,47 @@ async function eliminarItem(id){
 async function abrirItem(id){
   const it = items.find(x=>x.id===id);
   if(!it) return;
-  if(it.enIndexedDB){
-    try{
-      const dataUrl = await idbLeerArchivo(it.id);
-      if(!dataUrl){ toast('No se encontró el archivo guardado'); return; }
-      const blob = dataURLaBlob(dataUrl);
-      const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, '_blank');
-    }catch(err){
-      console.error(err);
-      toast('No se pudo abrir el archivo');
-    }
-  }else{
+  if(!it.enIndexedDB){
     window.open(it.valor, '_blank');
+    return;
+  }
+  const ext = String(it.extension||'').toLowerCase();
+  const esVisible = ['pdf','jpg','jpeg','png','webp','gif'].includes(ext) || it.tipo==='imagen';
+  // La pestaña nueva se abre YA, en el mismo toque del usuario. Si se abre
+  // despues de leer el archivo, el navegador la bloquea como "popup".
+  let ventana = null;
+  if(esVisible){
+    ventana = window.open('', '_blank');
+  }
+  try{
+    const dataUrl = await idbLeerArchivo(it.id);
+    if(!dataUrl){ if(ventana) ventana.close(); toast('No se encontró el archivo guardado'); return; }
+    const blobOriginal = dataURLaBlob(dataUrl);
+    const tipo = mimePorExtension(ext) || blobOriginal.type || 'application/octet-stream';
+    const blob = new Blob([blobOriginal], {type: tipo});
+    const blobUrl = URL.createObjectURL(blob);
+    const nombreArchivo = sanitizeNombreArchivo(it.nombre) + (ext ? '.'+ext : '');
+
+    if(esVisible && ventana){
+      ventana.location.href = blobUrl;
+      return;
+    }
+    // Excel/Word (o si el navegador bloqueo la pestaña): el celular no puede
+    // mostrarlos dentro del navegador, asi que se descargan con su nombre y
+    // extension, y el celular ofrece abrirlos con Excel/Word.
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = nombreArchivo;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Respaldo por si el navegador frena la descarga automatica
+    mostrarDescargaManual(blobUrl, nombreArchivo, 'Archivo',
+      'Si no se abrió solo, tocá para descargarlo y abrirlo:');
+  }catch(err){
+    console.error(err);
+    if(ventana) ventana.close();
+    toast('No se pudo abrir el archivo');
   }
 }
 /* Compartir un item: un link comparte la URL (o la copia si el celular no
