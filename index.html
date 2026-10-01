@@ -7,14 +7,14 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="theme-color" content="#5D0049">
+<meta name="theme-color" content="#5d0049">
 <style>
   :root{
-    --cream:#faf7f4;
+    --cream:#EEE5C2;
     --yellow:#FAD564;
     --yellowgreen:#D3DC7C;
     --sage:#8EBD9D;
-    --navy:#5D0049;
+    --navy:#5d0049;
     --navy-dark:#123349;
     --white:#fff;
     --ink:#2a2a24;
@@ -239,6 +239,10 @@
         <button class="btn btn-primary" onclick="abrirLinkGuardado('devolucionesLink')">Ir al formulario</button>
       </div>
 
+      <div class="section-title">Planillas de devolución</div>
+      <div id="devolucionesPlanillasList"></div>
+      <button class="btn btn-outline btn-block" style="margin-bottom:22px;" onclick="abrirModalItem('planillas_devolucion', 'devolucionesPlanillasList', 'Planillas de devolución')">+ Agregar</button>
+
       <div class="section-title">Créditos pendientes</div>
       <div id="creditosList"></div>
       <div class="row2">
@@ -282,7 +286,7 @@
       <h2>Agregar fábrica</h2>
       <div class="field" style="margin-bottom:0;">
         <label>Nombre</label>
-        <input type="text" id="fabricaNombreInput" placeholder="Ej: Paladini">
+        <input type="text" id="fabricaNombreInput" placeholder="Ingresar fábrica">
       </div>
       <div class="modal-actions">
         <button class="btn btn-outline" style="flex:1;" onclick="cerrarModal('modalFabrica')">Cancelar</button>
@@ -299,7 +303,7 @@
         <label>Nombre</label>
         <input type="text" id="item_nombre" placeholder="Ej: Lista agosto 2026">
       </div>
-      <div class="field">
+      <div class="field" id="itemTipoField">
         <label>Tipo</label>
         <div class="segmented" id="itemTipoSegmented">
           <div class="seg-opt active" data-tipo="link" onclick="setItemTipo('link')">Link</div>
@@ -312,12 +316,13 @@
         <input type="url" id="item_url" placeholder="https://...">
       </div>
       <div class="field" id="itemArchivoField" style="display:none; margin-bottom:0;">
-        <label>Archivo</label>
+        <label id="itemArchivoLabel">Archivo</label>
+        <div id="itemArchivoActualNota" style="display:none; font-size:12px; color:var(--ink-soft); margin-bottom:6px;"></div>
         <input type="file" id="item_archivo" accept="*/*">
       </div>
       <div class="modal-actions">
         <button class="btn btn-outline" style="flex:1;" onclick="cerrarModal('modalItem')">Cancelar</button>
-        <button class="btn btn-primary" style="flex:1;" onclick="agregarItem()">Agregar</button>
+        <button class="btn btn-primary" style="flex:1;" id="modalItemBtnSubmit" onclick="agregarItem()">Agregar</button>
       </div>
     </div>
   </div>
@@ -480,17 +485,6 @@ async function idbBorrarArchivo(id){
     tx.onerror = (e)=> reject(e.target.error);
   });
 }
-function mimePorExtension(ext){
-  const mapa = {
-    xls:'application/vnd.ms-excel',
-    xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    doc:'application/msword',
-    docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    pdf:'application/pdf',
-    jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp', gif:'image/gif', heic:'image/heic'
-  };
-  return mapa[String(ext||'').toLowerCase()] || '';
-}
 function dataURLaBlob(dataUrl){
   const partes = dataUrl.split(',');
   const mimeMatch = partes[0].match(/:(.*?);/);
@@ -643,6 +637,7 @@ function renderItemsList(containerId, categoria){
         <div class="cat-nombre">${escapeHtml(it.nombre)}</div>
         <div class="cat-tipo">${tipoItemLabel(it)}</div>
       </div>
+      <button class="share-btn" onclick="event.stopPropagation(); abrirModalItemEditar('${it.id}')" title="Modificar"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#1B475D" class="bi bi-pencil-fill" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.5.5 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11z"/></svg></button>
       <button class="share-btn" onclick="event.stopPropagation(); compartirItem('${it.id}')" title="Compartir"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#1B475D" class="bi bi-share-fill" viewBox="0 0 16 16"><path d="M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5"/></svg></button>
       <button class="del-x" onclick="event.stopPropagation(); eliminarItem('${it.id}')" title="Eliminar">&times;</button>
     </div>
@@ -654,6 +649,7 @@ function renderItemsList(containerId, categoria){
    planillas_alta, dentro de Alta de clientes) tienen su propio id. */
 function containerParaCategoria(categoria){
   if(categoria === 'planillas_alta') return 'altasPlanillasList';
+  if(categoria === 'planillas_devolucion') return 'devolucionesPlanillasList';
   return 'seccionList';
 }
 function renderSeccionList(){
@@ -679,15 +675,46 @@ function tipoItemLabel(it){
 }
 let modalItemCategoria = null;
 let modalItemContainerId = null;
+let modalItemEditandoId = null; // null = creando nuevo; sino, id del item que se esta modificando
 function abrirModalItem(categoria, containerId, tituloLabel){
+  modalItemEditandoId = null;
   modalItemCategoria = categoria || currentSeccion;
   modalItemContainerId = containerId || 'seccionList';
   const label = tituloLabel || (SECCIONES[modalItemCategoria] ? SECCIONES[modalItemCategoria].label : '');
   document.getElementById('modalItemTitulo').textContent = 'Agregar' + (label ? ' a ' + label : '');
+  document.getElementById('modalItemBtnSubmit').textContent = 'Agregar';
   document.getElementById('item_nombre').value = '';
   document.getElementById('item_url').value = '';
   document.getElementById('item_archivo').value = '';
+  document.getElementById('itemTipoField').style.display = 'block';
+  document.getElementById('itemArchivoActualNota').style.display = 'none';
   setItemTipo('link');
+  document.getElementById('modalItem').classList.add('show');
+}
+/* Abre el mismo modal, pero para MODIFICAR un item ya cargado: el nombre
+   siempre se puede cambiar; si es un link, tambien la URL; si es un
+   archivo/imagen, se puede reemplazar el archivo (opcional — si no se
+   elige uno nuevo, se mantiene el que ya estaba). El tipo no se puede
+   cambiar una vez creado, para no complicar la edicion. */
+function abrirModalItemEditar(id){
+  const it = items.find(x=>x.id===id);
+  if(!it) return;
+  modalItemEditandoId = id;
+  modalItemCategoria = it.categoria;
+  modalItemContainerId = containerParaCategoria(it.categoria);
+  document.getElementById('modalItemTitulo').textContent = 'Modificar';
+  document.getElementById('modalItemBtnSubmit').textContent = 'Guardar cambios';
+  document.getElementById('item_nombre').value = it.nombre;
+  document.getElementById('item_url').value = it.tipo==='link' ? it.valor : '';
+  document.getElementById('item_archivo').value = '';
+  document.getElementById('itemTipoField').style.display = 'none';
+  setItemTipo(it.tipo);
+  if(it.tipo !== 'link'){
+    const nota = document.getElementById('itemArchivoActualNota');
+    nota.textContent = 'Archivo actual: ' + it.nombre + (it.extension ? '.'+it.extension : '');
+    nota.style.display = 'block';
+    document.getElementById('itemArchivoLabel').textContent = 'Reemplazar archivo (opcional)';
+  }
   document.getElementById('modalItem').classList.add('show');
 }
 function setItemTipo(t){
@@ -697,6 +724,8 @@ function setItemTipo(t){
   });
   document.getElementById('itemLinkField').style.display = (t==='link') ? 'block' : 'none';
   document.getElementById('itemArchivoField').style.display = (t==='link') ? 'none' : 'block';
+  document.getElementById('itemArchivoLabel').textContent = 'Archivo';
+  document.getElementById('itemArchivoActualNota').style.display = 'none';
   const fileInput = document.getElementById('item_archivo');
   fileInput.accept = (t==='archivo') ? '.pdf,.doc,.docx,.xls,.xlsx' : (t==='imagen') ? 'image/*' : '*/*';
 }
@@ -705,33 +734,75 @@ function agregarItem(){
   if(!nombre){ toast('Ingresá un nombre'); return; }
   const categoria = modalItemCategoria || currentSeccion;
   const containerId = modalItemContainerId || 'seccionList';
+  const editandoId = modalItemEditandoId;
+
   if(itemTipoActual === 'link'){
     const url = document.getElementById('item_url').value.trim();
     if(!url){ toast('Ingresá una URL'); return; }
-    items.push({id:uid(), fabricaId:currentFabricaId, categoria, nombre, tipo:'link', valor:url, fecha:new Date().toISOString()});
-    saveJSON(LS.items, items);
-    cerrarModal('modalItem');
-    renderItemsList(containerId, categoria);
-    renderFabricaMenu();
-    toast('Agregado');
+    if(editandoId){
+      const it = items.find(x=>x.id===editandoId);
+      if(!it){ toast('No se encontró el item'); return; }
+      it.nombre = nombre;
+      it.valor = url;
+      saveJSON(LS.items, items);
+      cerrarModal('modalItem');
+      renderItemsList(containerId, categoria);
+      renderFabricaMenu();
+      toast('Modificado');
+    }else{
+      items.push({id:uid(), fabricaId:currentFabricaId, categoria, nombre, tipo:'link', valor:url, fecha:new Date().toISOString()});
+      saveJSON(LS.items, items);
+      cerrarModal('modalItem');
+      renderItemsList(containerId, categoria);
+      renderFabricaMenu();
+      toast('Agregado');
+    }
   }else{
     const fileInput = document.getElementById('item_archivo');
     const file = fileInput.files[0];
-    if(!file){ toast('Elegí un archivo'); return; }
+    if(!file && !editandoId){ toast('Elegí un archivo'); return; }
+
+    if(editandoId && !file){
+      // Solo cambia el nombre, el archivo se mantiene igual
+      const it = items.find(x=>x.id===editandoId);
+      if(!it){ toast('No se encontró el item'); return; }
+      it.nombre = nombre;
+      saveJSON(LS.items, items);
+      cerrarModal('modalItem');
+      renderItemsList(containerId, categoria);
+      renderFabricaMenu();
+      toast('Modificado');
+      return;
+    }
+
     const partesNombre = file.name.split('.');
     const extension = partesNombre.length>1 ? partesNombre.pop().toLowerCase() : '';
     toast('Guardando archivo...');
     const reader = new FileReader();
     reader.onload = async function(e){
-      const id = uid();
       try{
-        await idbGuardarArchivo(id, e.target.result);
-        items.push({id, fabricaId:currentFabricaId, categoria, nombre, tipo:itemTipoActual, valor:'', extension, enIndexedDB:true, fecha:new Date().toISOString()});
-        saveJSON(LS.items, items);
-        cerrarModal('modalItem');
-        renderItemsList(containerId, categoria);
-        renderFabricaMenu();
-        toast('Agregado');
+        if(editandoId){
+          const it = items.find(x=>x.id===editandoId);
+          if(!it){ toast('No se encontró el item'); return; }
+          await idbGuardarArchivo(editandoId, e.target.result); // mismo id, reemplaza el archivo anterior
+          it.nombre = nombre;
+          it.extension = extension;
+          it.enIndexedDB = true;
+          saveJSON(LS.items, items);
+          cerrarModal('modalItem');
+          renderItemsList(containerId, categoria);
+          renderFabricaMenu();
+          toast('Modificado');
+        }else{
+          const id = uid();
+          await idbGuardarArchivo(id, e.target.result);
+          items.push({id, fabricaId:currentFabricaId, categoria, nombre, tipo:itemTipoActual, valor:'', extension, enIndexedDB:true, fecha:new Date().toISOString()});
+          saveJSON(LS.items, items);
+          cerrarModal('modalItem');
+          renderItemsList(containerId, categoria);
+          renderFabricaMenu();
+          toast('Agregado');
+        }
       }catch(err){
         console.error(err);
         toast('No se pudo guardar el archivo (puede estar muy lleno el almacenamiento del celular)');
@@ -755,47 +826,19 @@ async function eliminarItem(id){
 async function abrirItem(id){
   const it = items.find(x=>x.id===id);
   if(!it) return;
-  if(!it.enIndexedDB){
-    window.open(it.valor, '_blank');
-    return;
-  }
-  const ext = String(it.extension||'').toLowerCase();
-  const esVisible = ['pdf','jpg','jpeg','png','webp','gif'].includes(ext) || it.tipo==='imagen';
-  // La pestaña nueva se abre YA, en el mismo toque del usuario. Si se abre
-  // despues de leer el archivo, el navegador la bloquea como "popup".
-  let ventana = null;
-  if(esVisible){
-    ventana = window.open('', '_blank');
-  }
-  try{
-    const dataUrl = await idbLeerArchivo(it.id);
-    if(!dataUrl){ if(ventana) ventana.close(); toast('No se encontró el archivo guardado'); return; }
-    const blobOriginal = dataURLaBlob(dataUrl);
-    const tipo = mimePorExtension(ext) || blobOriginal.type || 'application/octet-stream';
-    const blob = new Blob([blobOriginal], {type: tipo});
-    const blobUrl = URL.createObjectURL(blob);
-    const nombreArchivo = sanitizeNombreArchivo(it.nombre) + (ext ? '.'+ext : '');
-
-    if(esVisible && ventana){
-      ventana.location.href = blobUrl;
-      return;
+  if(it.enIndexedDB){
+    try{
+      const dataUrl = await idbLeerArchivo(it.id);
+      if(!dataUrl){ toast('No se encontró el archivo guardado'); return; }
+      const blob = dataURLaBlob(dataUrl);
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+    }catch(err){
+      console.error(err);
+      toast('No se pudo abrir el archivo');
     }
-    // Excel/Word (o si el navegador bloqueo la pestaña): el celular no puede
-    // mostrarlos dentro del navegador, asi que se descargan con su nombre y
-    // extension, y el celular ofrece abrirlos con Excel/Word.
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = nombreArchivo;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    // Respaldo por si el navegador frena la descarga automatica
-    mostrarDescargaManual(blobUrl, nombreArchivo, 'Archivo',
-      'Si no se abrió solo, tocá para descargarlo y abrirlo:');
-  }catch(err){
-    console.error(err);
-    if(ventana) ventana.close();
-    toast('No se pudo abrir el archivo');
+  }else{
+    window.open(it.valor, '_blank');
   }
 }
 /* Compartir un item: un link comparte la URL (o la copia si el celular no
@@ -832,16 +875,10 @@ async function compartirItem(id){
     }else{
       dataUrl = it.valor;
     }
-    const blobOriginal = dataURLaBlob(dataUrl);
-    const ext = it.extension ? '.'+it.extension : (blobOriginal.type.includes('png') ? '.png' : blobOriginal.type.includes('pdf') ? '.pdf' : '.jpg');
+    const blob = dataURLaBlob(dataUrl);
+    const ext = it.extension ? '.'+it.extension : (blob.type.includes('png') ? '.png' : blob.type.includes('pdf') ? '.pdf' : '.jpg');
     const nombreArchivo = sanitizeNombreArchivo(it.nombre) + ext;
-    // Algunos celulares guardan Excel/Word sin tipo (o como octet-stream):
-    // le ponemos el tipo correcto segun la extension para que el celular
-    // sepa con que app abrirlo/compartirlo.
-    const tipoCorrecto = mimePorExtension(it.extension) || blobOriginal.type || 'application/octet-stream';
-    const blob = new Blob([blobOriginal], {type: tipoCorrecto});
-    const file = new File([blob], nombreArchivo, {type: tipoCorrecto});
-    const esOffice = ['xls','xlsx','doc','docx'].includes((it.extension||'').toLowerCase());
+    const file = new File([blob], nombreArchivo, {type: blob.type});
 
     let compartido = false;
     if(navigator.canShare && navigator.canShare({files:[file]})){
@@ -855,16 +892,7 @@ async function compartirItem(id){
     }
     if(!compartido){
       const blobUrl = URL.createObjectURL(blob);
-      if(esOffice){
-        // Chrome (Android y PC) no permite compartir Excel/Word directo desde
-        // una pagina web; solo fotos, PDF, videos y texto. Se descarga y se
-        // comparte desde Descargas o desde WhatsApp > Adjuntar > Documento.
-        const tipoTxt = it.extension.toLowerCase().startsWith('xls') ? 'Excel' : 'Word';
-        mostrarDescargaManual(blobUrl, nombreArchivo, tipoTxt,
-          'Este navegador no deja compartir archivos ' + tipoTxt + ' directo. Descargalo y compartilo desde Descargas:');
-      }else{
-        mostrarDescargaManual(blobUrl, nombreArchivo, it.tipo==='imagen' ? 'Imagen' : 'Archivo');
-      }
+      mostrarDescargaManual(blobUrl, nombreArchivo, it.tipo==='imagen' ? 'Imagen' : 'Archivo');
     }
   }catch(err){
     console.error(err);
@@ -898,6 +926,7 @@ function irADevoluciones(){
   if(!f) return;
   document.getElementById('devolucionesFabricaNombre').textContent = f.nombre;
   document.getElementById('devolucionesUrlInput').value = f.devolucionesLink || '';
+  renderItemsList('devolucionesPlanillasList', 'planillas_devolucion');
   renderCreditos();
   showView('view-devoluciones');
 }
@@ -1002,7 +1031,7 @@ async function capturarBloqueComoImagen(html, anchoMM){
 /* Muestra un aviso fijo con un link REAL y tocable de descarga — necesario
    porque en algunos celulares la descarga automatica se bloquea en
    silencio si la generacion del PDF tardo unos segundos. */
-function mostrarDescargaManual(blobUrl, nombreArchivo, tipoArchivo, mensaje){
+function mostrarDescargaManual(blobUrl, nombreArchivo, tipoArchivo){
   tipoArchivo = tipoArchivo || 'PDF';
   let cont = document.getElementById('descargaManualOverlay');
   if(!cont){
@@ -1014,7 +1043,7 @@ function mostrarDescargaManual(blobUrl, nombreArchivo, tipoArchivo, mensaje){
   cont.innerHTML = '';
   const txt = document.createElement('div');
   txt.style.cssText = 'font-size:13px; flex:1; line-height:1.3;';
-  txt.textContent = mensaje || (tipoArchivo + ' listo — tocá para descargar:');
+  txt.textContent = tipoArchivo + ' listo — tocá para descargar:';
   const link = document.createElement('a');
   link.href = blobUrl;
   link.download = nombreArchivo;
