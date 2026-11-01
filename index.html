@@ -86,6 +86,14 @@
   .catalogo-card .cat-tipo{font-size:12px; color:var(--ink-soft); margin-top:1px;}
   .del-x{background:none; border:none; color:var(--danger); font-size:20px; cursor:pointer; padding:4px 8px; flex-shrink:0;}
   .share-btn{background:none; border:none; color:var(--navy); font-size:19px; cursor:pointer; padding:4px 8px; flex-shrink:0;}
+  /* En celulares angostos entran hasta 4 botones por item (modificar, descargar,
+     compartir, eliminar): se achican los espacios y el nombre puede ocupar dos
+     renglones, en vez de quedar cortado con "...". */
+  @media (max-width:480px){
+    .catalogo-card{padding:12px; gap:6px;}
+    .catalogo-card .share-btn, .catalogo-card .del-x{padding:4px 5px;}
+    .catalogo-card .cat-nombre{white-space:normal; overflow:visible; text-overflow:clip; line-height:1.25;}
+  }
 
   .import-card{background:var(--white); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px; box-shadow:var(--shadow);}
   .import-card h3{margin:0 0 4px; font-size:14.5px; color:var(--navy);}
@@ -694,6 +702,7 @@ function renderItemsList(containerId, categoria){
         <div class="cat-tipo">${tipoItemLabel(it)}</div>
       </div>
       <button class="share-btn solo-editor" onclick="event.stopPropagation(); abrirModalItemEditar('${it.id}')" title="Modificar"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#1B475D" class="bi bi-pencil-fill" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.5.5 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11z"/></svg></button>
+      ${(it.tipo==='link' && urlDescargaGoogle(it.valor)) ? `<button class="share-btn" onclick="event.stopPropagation(); descargarItem('${it.id}')" title="Descargar"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#1B475D" class="bi bi-download" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/></svg></button>` : ''}
       <button class="share-btn" onclick="event.stopPropagation(); compartirItem('${it.id}')" title="Compartir"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#1B475D" class="bi bi-share-fill" viewBox="0 0 16 16"><path d="M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5"/></svg></button>
       <button class="del-x solo-editor" onclick="event.stopPropagation(); eliminarItem('${it.id}')" title="Eliminar">&times;</button>
     </div>
@@ -890,6 +899,49 @@ async function eliminarItem(id){
   }
   if(it) renderItemsList(containerParaCategoria(it.categoria), it.categoria);
   renderFabricaMenu();
+}
+/* Convierte un link de Google Drive / Google Docs a su link de DESCARGA
+   directa (el link comun de "compartir" abre el visor o Excel Web en modo
+   lectura). Devuelve null si el link no es de Google, o si es una carpeta o
+   algo que no se puede bajar como archivo. Requiere que el archivo este
+   compartido como "cualquier persona con el link". */
+function urlDescargaGoogle(url){
+  if(!url) return null;
+  let u;
+  try{ u = new URL(String(url).trim()); }catch(e){ return null; }
+  const host = u.hostname;
+  const path = u.pathname;
+  if(host === 'drive.google.com'){
+    if(/\/drive\/(u\/\d+\/)?folders\//.test(path) || /\/folderview/.test(path)) return null; // carpeta
+    let m = path.match(/\/file\/d\/([-\w]{20,})/);
+    let id = m ? m[1] : (u.searchParams.get('id') || '');
+    if(!/^[-\w]{20,}$/.test(id)) return null;
+    return 'https://drive.google.com/uc?export=download&id=' + id;
+  }
+  if(host === 'docs.google.com'){
+    const m = path.match(/^\/(spreadsheets|document|presentation)\/d\/([-\w]{20,})/);
+    if(!m) return null; // incluye los "publicados" (/d/e/...), que no se pueden exportar asi
+    const formato = {spreadsheets:'xlsx', document:'docx', presentation:'pptx'}[m[1]];
+    return 'https://docs.google.com/' + m[1] + '/d/' + m[2] + '/export?format=' + formato;
+  }
+  return null;
+}
+function descargarItem(id){
+  const it = items.find(x=>x.id===id);
+  if(!it) return;
+  const url = urlDescargaGoogle(it.valor);
+  if(!url){ toast('Este link no se puede descargar directo'); return; }
+  // Un link comun (no un fetch) para que el navegador lo trate como descarga;
+  // se abre aparte para no sacar al usuario de la app si Google muestra
+  // alguna pantalla intermedia (por ejemplo en archivos muy grandes).
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast('Descargando...');
 }
 async function abrirItem(id){
   const it = items.find(x=>x.id===id);
