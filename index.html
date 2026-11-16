@@ -362,8 +362,7 @@
         <label>Tipo</label>
         <div class="segmented" id="itemTipoSegmented">
           <div class="seg-opt active" data-tipo="link" onclick="setItemTipo('link')">Link</div>
-          <div class="seg-opt" data-tipo="archivo" onclick="setItemTipo('archivo')">Archivo</div>
-          <div class="seg-opt" data-tipo="imagen" onclick="setItemTipo('imagen')">Imagen</div>
+          <div class="seg-opt" data-tipo="archivo" onclick="setItemTipo('archivo')">Excel / PDF</div>
         </div>
       </div>
       <div class="field" id="itemLinkField">
@@ -483,6 +482,7 @@ let currentFabricaId = null;
 let currentSeccion = null; // 'planillas' | 'acciones' | 'precios' | 'catalogos' | 'bancos'
 let itemTipoActual = 'link';
 
+const CAT_RESUMENES = 'planillas'; // la seccion "Resúmenes" (acepta links y Excel/PDF subidos)
 const SECCIONES = {
   planillas: {label:'Resúmenes', icono:'<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#1B475D" class="bi bi-clipboard2-data-fill" viewBox="0 0 16 16"><path d="M10 .5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5.5.5 0 0 1-.5.5.5.5 0 0 0-.5.5V2a.5.5 0 0 0 .5.5h5A.5.5 0 0 0 11 2v-.5a.5.5 0 0 0-.5-.5.5.5 0 0 1-.5-.5"/><path d="M4.085 1H3.5A1.5 1.5 0 0 0 2 2.5v12A1.5 1.5 0 0 0 3.5 16h9a1.5 1.5 0 0 0 1.5-1.5v-12A1.5 1.5 0 0 0 12.5 1h-.585q.084.236.085.5V2a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 2v-.5q.001-.264.085-.5M10 7a1 1 0 1 1 2 0v5a1 1 0 1 1-2 0zm-6 4a1 1 0 1 1 2 0v1a1 1 0 1 1-2 0zm4-3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V9a1 1 0 0 1 1-1"/></svg>'},
   acciones: {label:'Descuentos - otros', icono:'<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#1B475D" class="bi bi-briefcase-fill" viewBox="0 0 16 16"><path d="M6.5 1A1.5 1.5 0 0 0 5 2.5V3H1.5A1.5 1.5 0 0 0 0 4.5v1.384l7.614 2.03a1.5 1.5 0 0 0 .772 0L16 5.884V4.5A1.5 1.5 0 0 0 14.5 3H11v-.5A1.5 1.5 0 0 0 9.5 1zm0 1h3a.5.5 0 0 1 .5.5V3H6v-.5a.5.5 0 0 1 .5-.5"/><path d="M0 12.5A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5V6.85L8.129 8.947a.5.5 0 0 1-.258 0L0 6.85z"/></svg>'},
@@ -702,7 +702,7 @@ function renderItemsList(containerId, categoria){
         <div class="cat-tipo">${tipoItemLabel(it)}</div>
       </div>
       <button class="share-btn solo-editor" onclick="event.stopPropagation(); abrirModalItemEditar('${it.id}')" title="Modificar"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#1B475D" class="bi bi-pencil-fill" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.5.5 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11z"/></svg></button>
-      ${(it.tipo==='link' && urlDescargaGoogle(it.valor)) ? `<button class="share-btn" onclick="event.stopPropagation(); descargarItem('${it.id}')" title="Descargar"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#1B475D" class="bi bi-download" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/></svg></button>` : ''}
+      ${((it.tipo==='link' && urlDescargaGoogle(it.valor)) || esArchivoStorage(it)) ? `<button class="share-btn" onclick="event.stopPropagation(); descargarItem('${it.id}')" title="Descargar"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#1B475D" class="bi bi-download" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/></svg></button>` : ''}
       <button class="share-btn" onclick="event.stopPropagation(); compartirItem('${it.id}')" title="Compartir"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#1B475D" class="bi bi-share-fill" viewBox="0 0 16 16"><path d="M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5"/></svg></button>
       <button class="del-x solo-editor" onclick="event.stopPropagation(); eliminarItem('${it.id}')" title="Eliminar">&times;</button>
     </div>
@@ -751,7 +751,8 @@ function abrirModalItem(categoria, containerId, tituloLabel){
   document.getElementById('item_nombre').value = '';
   document.getElementById('item_url').value = '';
   document.getElementById('item_archivo').value = '';
-  document.getElementById('itemTipoField').style.display = 'none'; // version compartida: solo links
+  // Solo en Resumenes se puede elegir entre Link y Excel/PDF subido; en el resto, solo links
+  document.getElementById('itemTipoField').style.display = (modalItemCategoria === CAT_RESUMENES) ? 'block' : 'none';
   document.getElementById('itemArchivoActualNota').style.display = 'none';
   setItemTipo('link');
   document.getElementById('modalItem').classList.add('show');
@@ -778,7 +779,7 @@ function abrirModalItemEditar(id){
     const nota = document.getElementById('itemArchivoActualNota');
     nota.textContent = 'Archivo actual: ' + it.nombre + (it.extension ? '.'+it.extension : '');
     nota.style.display = 'block';
-    document.getElementById('itemArchivoLabel').textContent = 'Reemplazar archivo (opcional)';
+    document.getElementById('itemArchivoLabel').textContent = 'Subir versión nueva (reemplaza la actual)';
   }
   document.getElementById('modalItem').classList.add('show');
 }
@@ -792,7 +793,7 @@ function setItemTipo(t){
   document.getElementById('itemArchivoLabel').textContent = 'Archivo';
   document.getElementById('itemArchivoActualNota').style.display = 'none';
   const fileInput = document.getElementById('item_archivo');
-  fileInput.accept = (t==='archivo') ? '.pdf,.doc,.docx,.xls,.xlsx' : (t==='imagen') ? 'image/*' : '*/*';
+  fileInput.accept = (t==='archivo') ? '.pdf,.xls,.xlsx,.xlsm,.csv' : (t==='imagen') ? 'image/*' : '*/*';
 }
 async function agregarItem(){
   const nombre = document.getElementById('item_nombre').value.trim();
@@ -830,16 +831,17 @@ async function agregarItem(){
       toast('Agregado');
     }
   }else{
-    toast('Subí el archivo a Google Drive y cargalo como link');
-    return;
-    const fileInput = document.getElementById('item_archivo');
-    const file = fileInput.files[0];
+    // Archivo (Excel / PDF) -> Supabase Storage, para que lo vean todos los dispositivos
+    const file = document.getElementById('item_archivo').files[0];
     if(!file && !editandoId){ toast('Elegí un archivo'); return; }
 
     if(editandoId && !file){
       // Solo cambia el nombre, el archivo se mantiene igual
       const it = items.find(x=>x.id===editandoId);
       if(!it){ toast('No se encontró el item'); return; }
+      try{
+        await guardarItemServidor(Object.assign({}, it, {nombre}));
+      }catch(e){ avisarErrorServidor(e); return; }
       it.nombre = nombre;
       saveJSON(LS.items, items);
       cerrarModal('modalItem');
@@ -849,41 +851,46 @@ async function agregarItem(){
       return;
     }
 
-    const partesNombre = file.name.split('.');
-    const extension = partesNombre.length>1 ? partesNombre.pop().toLowerCase() : '';
-    toast('Guardando archivo...');
-    const reader = new FileReader();
-    reader.onload = async function(e){
-      try{
-        if(editandoId){
-          const it = items.find(x=>x.id===editandoId);
-          if(!it){ toast('No se encontró el item'); return; }
-          await idbGuardarArchivo(editandoId, e.target.result); // mismo id, reemplaza el archivo anterior
-          it.nombre = nombre;
-          it.extension = extension;
-          it.enIndexedDB = true;
-          saveJSON(LS.items, items);
-          cerrarModal('modalItem');
-          renderItemsList(containerId, categoria);
-          renderFabricaMenu();
-          toast('Modificado');
-        }else{
-          const id = uid();
-          await idbGuardarArchivo(id, e.target.result);
-          items.push({id, fabricaId:currentFabricaId, categoria, nombre, tipo:itemTipoActual, valor:'', extension, enIndexedDB:true, fecha:new Date().toISOString()});
-          saveJSON(LS.items, items);
-          cerrarModal('modalItem');
-          renderItemsList(containerId, categoria);
-          renderFabricaMenu();
-          toast('Agregado');
-        }
-      }catch(err){
-        console.error(err);
-        toast('No se pudo guardar el archivo (puede estar muy lleno el almacenamiento del celular)');
+    const extension = extensionDeNombre(file.name);
+    if(!['pdf','xls','xlsx','xlsm','csv'].includes(extension)){ toast('Solo se pueden subir archivos Excel o PDF'); return; }
+    if(file.size > 50*1024*1024){ toast('El archivo pesa más de 50 MB, es demasiado grande'); return; }
+
+    const btn = document.getElementById('modalItemBtnSubmit');
+    btn.disabled = true;
+    toast('Subiendo archivo...');
+    const id = editandoId || uid();
+    const rutaNueva = `${currentFabricaId}/${id}_${Date.now()}.${extension}`;
+    let subido = false;
+    try{
+      await subirArchivoStorage(rutaNueva, file);
+      subido = true;
+      if(editandoId){
+        const it = items.find(x=>x.id===editandoId);
+        if(!it){ toast('No se encontró el item'); return; }
+        const rutaVieja = it.valor;
+        await guardarItemServidor(Object.assign({}, it, {nombre, valor:rutaNueva}));
+        it.nombre = nombre;
+        it.valor = rutaNueva;
+        it.extension = extension;
+        if(rutaVieja && rutaVieja !== rutaNueva) await borrarArchivoStorage(rutaVieja); // no deja versiones viejas ocupando lugar
+        toast('Archivo reemplazado');
+      }else{
+        const nuevo = {id, fabricaId:currentFabricaId, categoria, nombre, tipo:'archivo', valor:rutaNueva, extension, fecha:new Date().toISOString()};
+        await guardarItemServidor(nuevo);
+        items.push(nuevo);
+        toast('Agregado');
       }
-    };
-    reader.onerror = function(){ toast('No se pudo leer el archivo'); };
-    reader.readAsDataURL(file);
+      saveJSON(LS.items, items);
+      cerrarModal('modalItem');
+      renderItemsList(containerId, categoria);
+      renderFabricaMenu();
+    }catch(e){
+      console.error(e);
+      if(subido) borrarArchivoStorage(rutaNueva); // si falló el guardado del registro, no deja el archivo huérfano
+      avisarErrorServidor(e);
+    }finally{
+      btn.disabled = false;
+    }
   }
 }
 async function eliminarItem(id){
@@ -894,6 +901,7 @@ async function eliminarItem(id){
   }catch(e){ avisarErrorServidor(e); return; }
   items = items.filter(x=>x.id!==id);
   saveJSON(LS.items, items);
+  if(it && esArchivoStorage(it)) borrarArchivoStorage(it.valor);
   if(it && it.enIndexedDB){
     try{ await idbBorrarArchivo(id); }catch(err){ console.error(err); }
   }
@@ -926,9 +934,20 @@ function urlDescargaGoogle(url){
   }
   return null;
 }
-function descargarItem(id){
+async function descargarItem(id){
   const it = items.find(x=>x.id===id);
   if(!it) return;
+  if(esArchivoStorage(it)){
+    toast('Descargando...');
+    try{
+      const blob = await bajarBlobStorage(it);
+      descargarBlob(blob, nombreArchivoDe(it));
+    }catch(err){
+      console.error(err);
+      window.open(urlPublicaStorage(it.valor), '_blank'); // respaldo: que lo baje el navegador
+    }
+    return;
+  }
   const url = urlDescargaGoogle(it.valor);
   if(!url){ toast('Este link no se puede descargar directo'); return; }
   // Un link comun (no un fetch) para que el navegador lo trate como descarga;
@@ -946,6 +965,10 @@ function descargarItem(id){
 async function abrirItem(id){
   const it = items.find(x=>x.id===id);
   if(!it) return;
+  if(esArchivoStorage(it)){
+    window.open(urlPublicaStorage(it.valor), '_blank'); // PDF se ve en el navegador; Excel se descarga
+    return;
+  }
   if(it.enIndexedDB){
     try{
       const dataUrl = await idbLeerArchivo(it.id);
@@ -988,14 +1011,19 @@ async function compartirItem(id){
   // archivo / imagen
   toast('Preparando para compartir...');
   try{
-    let dataUrl;
-    if(it.enIndexedDB){
-      dataUrl = await idbLeerArchivo(it.id);
-      if(!dataUrl){ toast('No se encontró el archivo guardado'); return; }
+    let blob;
+    if(esArchivoStorage(it)){
+      blob = await bajarBlobStorage(it);
     }else{
-      dataUrl = it.valor;
+      let dataUrl;
+      if(it.enIndexedDB){
+        dataUrl = await idbLeerArchivo(it.id);
+        if(!dataUrl){ toast('No se encontró el archivo guardado'); return; }
+      }else{
+        dataUrl = it.valor;
+      }
+      blob = dataURLaBlob(dataUrl);
     }
-    const blob = dataURLaBlob(dataUrl);
     const ext = it.extension ? '.'+it.extension : (blob.type.includes('png') ? '.png' : blob.type.includes('pdf') ? '.pdf' : '.jpg');
     const nombreArchivo = sanitizeNombreArchivo(it.nombre) + ext;
     const file = new File([blob], nombreArchivo, {type: blob.type});
@@ -1379,6 +1407,49 @@ function avisarErrorServidor(e){
     toast('No se pudo guardar: revisá la conexión');
 }
 
+/* ---------- ARCHIVOS SUBIDOS (Supabase Storage, solo Resumenes) ---------- */
+const BUCKET_ARCHIVOS = 'resumenes';
+function extensionDeNombre(nombre){
+  const m = String(nombre||'').toLowerCase().match(/\.([a-z0-9]{1,5})$/);
+  return m ? m[1] : '';
+}
+/* Un archivo subido guarda en "valor" la ruta dentro del bucket
+   (fabrica/item_fecha.xlsx); la extension se deduce de esa ruta. */
+function esArchivoStorage(it){
+  return !!it && it.tipo === 'archivo' && !it.enIndexedDB && !!it.valor;
+}
+function urlPublicaStorage(ruta){
+  return sb.storage.from(BUCKET_ARCHIVOS).getPublicUrl(ruta).data.publicUrl;
+}
+async function subirArchivoStorage(ruta, file){
+  if(!sb) throw new Error('sin libreria');
+  const { error } = await sb.storage.from(BUCKET_ARCHIVOS).upload(ruta, file, {
+    contentType: file.type || 'application/octet-stream',
+    cacheControl: '3600',
+    upsert: false
+  });
+  if(error) throw error;
+}
+async function borrarArchivoStorage(ruta){
+  try{ await sb.storage.from(BUCKET_ARCHIVOS).remove([ruta]); }
+  catch(e){ console.error('No se pudo borrar el archivo del servidor:', e); }
+}
+async function bajarBlobStorage(it){
+  const resp = await fetch(urlPublicaStorage(it.valor));
+  if(!resp.ok) throw new Error('HTTP ' + resp.status);
+  return await resp.blob();
+}
+function nombreArchivoDe(it){
+  return sanitizeNombreArchivo(it.nombre) + (it.extension ? '.'+it.extension : '');
+}
+function descargarBlob(blob, nombre){
+  const u = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = u; a.download = nombre;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(u), 10000);
+}
+
 /* ---------- ITEMS DE LAS SECCIONES ---------- */
 async function obtenerItems(){
   if(!sb) throw new Error('sin libreria');
@@ -1391,6 +1462,7 @@ async function obtenerItems(){
     nombre: r.nombre,
     tipo: r.tipo,
     valor: r.valor || '',
+    extension: r.tipo === 'link' ? '' : extensionDeNombre(r.valor || ''),
     fecha: r.fecha
   }));
 }
